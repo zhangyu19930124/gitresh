@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimum-scale=1.0, maximum-scale=1.0">
+	<title>iscroll实现下拉刷新</title>
+	<link rel="stylesheet" type="text/css" href="css/iscroll.css">
+	<script type="text/javascript" src = "js/bmob.js"></script>
+    <script type="text/javascript" src = "js/bmobSocketIo.js"></script>
+	<script type="text/javascript" src = "js/flexible.js"></script>
+	<script type="text/javascript" src = "js/flexible_css.js"></script>
+	<script type="text/javascript" src = "js/jquery.min.js"></script>
+	<script type="text/javascript" src = "js/iscroll-probe.js"></script>
+</head>
+<body onload="loaded()">
+	<div id="header">
+		兼职
+	</div>
+	<div id="wrapper" style="left: 0px;">
+       <div id="scroller" style="transition-timing-function: cubic-bezier(0.1, 0.57, 0.1, 1); transition-duration: 0ms; transform: translate(0px, -40px) translateZ(0px);">
+          <div class="pullDown">
+            <span class="pullDownIcon">&nbsp;</span>
+            <span class="pullDownLabel">按下刷新</span>
+          </div>
+	      <div class="content">
+	        <ul id="cont_ul"></ul>
+	      </div>
+        <div class="pullUp"></div>
+         </div>
+	<!-- <div class="iScrollVerticalScrollbar iScrollLoneScrollbar" style="position: absolute; z-index: 9999; width: 7px; bottom: 2px; top: 2px; right: 1px; overflow: hidden; pointer-events: none; transform: translateZ(0px); transition-duration: 500ms; opacity: 0;">
+	<div class="iScrollIndicator" style="box-sizing: border-box; position: absolute; border: 1px solid rgba(255, 255, 255, 0.901961); border-radius: 3px; width: 100%; transition-duration: 0ms; display: block; height: 74px; transform: translate(0px, 10px) translateZ(0px); transition-timing-function: cubic-bezier(0.1, 0.57, 0.1, 1); background: rgba(0, 0, 0, 0.498039);"> -->	
+	 </div>
+	</div>
+	</div>
+	<div id="footer"></div>
+	<!-- js代码 -->
+  <script type="text/javascript">
+       // 数据连接
+	    Bmob.initialize("99fa1b916f70bcef5f6da908994f9348","0dba68e39f3ec1f8aeddbfe8d049dd4c");
+	    var JianZhi = Bmob.Object.extend("T_jianzhi");
+		var query = new Bmob.Query(JianZhi);
+		var p1 = "http://file.bmob.cn/";
+
+        var items_per_page = 10;
+        var scroll_in_progress = false;
+        var myScroll;
+        var limit = 10;
+        var pages = 1;
+        // 获取数据
+          query.descending("createdAt");
+          query.limit(limit);
+          query.find({
+	          success: function(results) {
+	            for (var i = 0; i < results.length; i++) {
+	              var object = results[i];
+	              var title = object.get('Jianzhi_Title'); 
+	              var place = object.get('Jianzhi_Place');
+	              var money = object.get('Jianzhi_money');
+	              var time = object.createdAt;
+	              var url  = object.get("Jianzhi_Url");
+                  var Time = getDateTimeStamp(time);
+                  var time1 = getDateDiff(Time);
+                  var id = object.id;
+                  console.log(id);
+	              // console.log(url);
+	              var p = '<li id="'+id+'"><a style="clear:both"><div class="img"><span id="sp1"><img src="'+url+'"></span></div><div class="contained"><div class="title_time"><span class="title">'+title+'</span><span class="time">'+time1+'</span></div><div class="place">'+place+'</div><div class="money">'+money+'</div></div></a></li>';
+	              $('#cont_ul').append(p);
+	            }
+	          },
+	          error: function(error) {
+	            alert("查询失败: " + error.code + " " + error.message);
+	          }
+	        });
+         // 比较时间戳
+		function getDateDiff(dateTimeStamp){
+				var minute = 1000 * 60;
+				var hour = minute * 60;
+				var day = hour * 24;
+				var halfamonth = day * 15;
+				var month = day * 30;
+				var now = new Date().getTime();
+				var diffValue = now - dateTimeStamp;
+				if(diffValue < 0){return;}
+				var monthC =diffValue/month;
+				var weekC =diffValue/(7*day);
+				var dayC =diffValue/day;
+				var hourC =diffValue/hour;
+				var minC =diffValue/minute;
+				if(monthC>=1){
+					result="" + parseInt(monthC) + "月前";
+				}
+				else if(weekC>=1){
+					result="" + parseInt(weekC) + "周前";
+				}
+				else if(dayC>=1){
+					result=""+ parseInt(dayC) +"天前";
+				}
+				else if(hourC>=1){
+					result=""+ parseInt(hourC) +"小时前";
+				}
+				else if(minC>=1){
+					result=""+ parseInt(minC) +"分钟前";
+				}else
+				result="刚刚";
+				return result;
+			}
+		// 转化为时间戳
+		function getDateTimeStamp(dateStr){
+			  return Date.parse(dateStr.replace(/-/gi,"/"));
+			}
+        // 实现刷新
+        load_content = function (refresh, next_page) {
+            console.log(refresh, next_page);
+            setTimeout(function () { // This immitates the CALLBACK of your AJAX function
+                if (!refresh) {
+                    // 初始内容
+                } else if (refresh && next_page) {
+                    // 刷新内容 
+                    // $('#wrapper > #scroller > .content > ul').prepend('<li>添加数据</li>');
+                    // $('#wrapper > #scroller > .content > ul').prepend('<li>添加数据2</li>');
+
+                $('#wrapper > #scroller > .content > ul').html('');  
+            //         query.descending("createdAt");
+                    query.limit(limit);
+		            query.find({
+				          success: function(results) {
+				            for (var i = 0; i < results.length; i++) {
+				              var object = results[i];
+				              var title = object.get('Jianzhi_Title'); 
+				              var place = object.get('Jianzhi_Place');
+				              var money = object.get('Jianzhi_money');
+				              var time = object.createdAt;
+				              var url  = object.get("Jianzhi_Url");
+			                  var Time = getDateTimeStamp(time);
+			                  var time1 = getDateDiff(Time);
+			                  var id = object.id;
+
+				              var p = '<li id="'+id+'"><a style="clear:both"><div class="img"><span id="sp1"><img src="'+url+'"></span></div><div class="contained"><div class="title_time"><span class="title">'+title+'</span><span class="time">'+time1+'</span></div><div class="place">'+place+'</div><div class="money">'+money+'</div></div></a></li>';
+				              // $('#cont_ul').append(p);
+				           $('#wrapper > #scroller > .content > ul').append(p);
+				            }
+				          },
+				          error: function(error) {
+				            alert("查询失败: " + error.code + " " + error.message);
+				          }
+				        }); 
+
+                 } 
+                else if (refresh && !next_page) {
+                    // Loading the next-page content and refreshing
+                    // $('#wrapper > #scroller > .content > ul').append('<li>方法</li>');
+                    // $('#wrapper > #scroller > .content > ul').append('<li>说到底是</li>');
+                    query.skip(limit*pages);
+                     query.find({
+				          success: function(results) {
+				            for (var i = 0; i < results.length; i++) {
+				              var object = results[i];
+				              var title = object.get('Jianzhi_Title'); 
+				              var place = object.get('Jianzhi_Place');
+				              var money = object.get('Jianzhi_money');
+				              var time = object.createdAt;
+				              var url  = object.get("Jianzhi_Url");
+			                  var Time = getDateTimeStamp(time);
+			                  var time1 = getDateDiff(Time);
+			                  var id = object.id;
+				              // console.log(url);
+				              var p = '<li id="'+id+'"><a style="clear:both"><div class="img"><span id="sp1"><img src="'+url+'"></span></div><div class="contained"><div class="title_time"><span class="title">'+title+'</span><span class="time">'+time1+'</span></div><div class="place">'+place+'</div><div class="money">'+money+'</div></div></a></li>';
+				              $('#cont_ul').append(p);
+				            }
+				            pages++;
+				          },
+				          error: function(error) {
+				            alert("查询失败: " + error.code + " " + error.message);
+				          }
+				        });  
+				            
+                   
+                }
+
+                if (refresh) {
+
+                    myScroll.refresh();
+                    pullActionCallback();
+
+                } else {
+                    if (myScroll) {
+                        myScroll.destroy();
+                        $(myScroll.scroller).attr('style', ''); // Required since the styles applied by IScroll might conflict with transitions of parent layers.
+                        myScroll = null;
+                    }
+                    trigger_myScroll();
+
+                }
+            }, 1000);
+
+        };
+
+        function pullDownAction() {
+            load_content('refresh');
+            $('#wrapper > #scroller > ul').data('page', 1);
+
+            // Since "topOffset" is not supported with iscroll-5
+            $('#wrapper > .scroller').css({top: 0});
+
+        }
+        function pullUpAction(callback) {
+            // if ($('#wrapper > #scroller > ul').data('page')) {
+            //     var next_page = parseInt($('#wrapper > #scroller > ul').data('page'), 10) + 1;
+            // } else {
+            //     var next_page = 2;
+            // }
+            // load_content('refresh', next_page);
+            // $('#wrapper > #scroller > ul').data('page', next_page);
+
+            // if (callback) {
+            //     callback();
+            // }
+        }
+        function pullActionCallback() {
+            if (pullDownEl && pullDownEl.className.match('loading')) {
+
+                pullDownEl.className = 'pullDown';
+                pullDownEl.querySelector('.pullDownLabel').innerHTML = '按下刷新';
+
+                myScroll.scrollTo(0, parseInt(pullUpOffset) * (-1), 200);
+
+            } else if (pullUpEl && pullUpEl.className.match('loading')) {
+
+                $('.pullUp').removeClass('loading').html('');
+
+            }
+        }
+        var pullActionDetect = {
+            count: 0,
+            limit: 10,
+            check: function (count) {
+                if (count) {
+                    pullActionDetect.count = 0;
+                }
+                // Detects whether the momentum has stopped, and if it has reached the end - 200px of the scroller - it trigger the pullUpAction
+                setTimeout(function () {
+                    if (myScroll.y <= (myScroll.maxScrollY + 200) && pullUpEl && !pullUpEl.className.match('loading')) {
+                        $('.pullUp').addClass('loading').html('<span class="pullUpIcon">&nbsp;</span><span class="pullUpLabel">正在加载</span>');
+                        pullUpAction();
+                    } else if (pullActionDetect.count < pullActionDetect.limit) {
+                        pullActionDetect.check();
+                        pullActionDetect.count++;
+                    }
+                }, 200);
+            }
+        }
+
+        function trigger_myScroll(offset) {
+            pullDownEl = document.querySelector('#wrapper .pullDown');
+            if (pullDownEl) {
+                pullDownOffset = pullDownEl.offsetHeight;
+            } else {
+                pullDownOffset = 0;
+            }
+            pullUpEl = document.querySelector('#wrapper .pullUp');
+            if (pullUpEl) {
+                pullUpOffset = pullUpEl.offsetHeight;
+            } else {
+                pullUpOffset = 0;
+            }
+
+            if ($('#wrapper ul > li').length < items_per_page) {
+                // If we have only 1 page of result - we hide the pullup and pulldown indicators.
+                $('#wrapper .pullDown').hide();
+                $('#wrapper .pullUp span').hide();
+                offset = 0;
+            } else if (!offset) {
+                // If we have more than 1 page of results and offset is not manually defined - we set it to be the pullUpOffset.
+                offset = pullUpOffset;
+            }
+
+            myScroll = new IScroll('#wrapper', {
+                probeType: 1,
+                tap: true,
+                click: false,
+                preventDefaultException: {tagName: /.*/},
+                mouseWheel: true,
+                scrollbars: true,
+                fadeScrollbars: true,
+                interactiveScrollbars: false,
+                keyBindings: false,
+                deceleration: 0.0002,
+                startY: (parseInt(offset) * (-1))
+            });
+
+            myScroll.on('scrollStart', function () {
+                scroll_in_progress = true;
+            });
+            myScroll.on('scroll', function () {
+
+                scroll_in_progress = true;
+
+                if ($('#wrapper ul > li').length >= items_per_page) {
+                    if (this.y >= 5 && pullDownEl && !pullDownEl.className.match('flip')) {
+                        pullDownEl.className = 'pullDown flip';
+                        pullDownEl.querySelector('.pullDownLabel').innerHTML = '请刷新';
+                        this.minScrollY = 0;
+                    } else if (this.y <= 5 && pullDownEl && pullDownEl.className.match('flip')) {
+                        pullDownEl.className = 'pullDown';
+                        pullDownEl.querySelector('.pullDownLabel').innerHTML = '下拉刷新';
+                        this.minScrollY = -pullDownOffset;
+                    }
+
+                    console.log(this.y);
+                    pullActionDetect.check(0);
+
+                }
+            });
+            myScroll.on('scrollEnd', function () {
+                console.log('scroll ended');
+                setTimeout(function () {
+                    scroll_in_progress = false;
+                }, 100);
+                if ($('#wrapper ul > li').length >= items_per_page) {
+                    if (pullDownEl && pullDownEl.className.match('flip')) {
+                        pullDownEl.className = 'pullDown loading';
+                        pullDownEl.querySelector('.pullDownLabel').innerHTML = '正在加载。。。';
+                        pullDownAction();
+                    }
+                    // We let the momentum scroll finish, and if reached the end - loading the next page
+                    pullActionDetect.check(0);
+                }
+            });
+
+            // In order to prevent seeing the "pull down to refresh" before the iScoll is trigger - the wrapper is located at left:-9999px and returned to left:0 after the iScoll is initiated
+            setTimeout(function () {
+                $('#wrapper').css({left: 0});
+            }, 100);
+        }
+
+        function loaded() {
+            load_content();
+        }
+
+        document.addEventListener('touchmove', function (e) {
+            e.preventDefault();
+        }, false);
+
+    </script>
+</body>
+</html>

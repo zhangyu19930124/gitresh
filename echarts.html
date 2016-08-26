@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>饼状图</title>
+	<script type="text/javascript" src = "js/bmob.js"></script>
+	<script type="text/javascript" src = "js/flexible.js"></script>
+	<script type="text/javascript" src = "js/flexible_css.js"></script>
+	<script type="text/javascript" src = "js/jquery.min.js"></script>
+	<script type="text/javascript" src = "js/echarts.js"></script>
+</head>
+<body>
+
+	 <div id="main" style="width: 600px;height:400px;"></div>
+    <script type="text/javascript">
+        // 基于准备好的dom，初始化echarts实例
+        Bmob.initialize("99fa1b916f70bcef5f6da908994f9348","0dba68e39f3ec1f8aeddbfe8d049dd4c");
+	    var JianZhi = Bmob.Object.extend("T_jianzhi");
+		var query = new Bmob.Query(JianZhi);
+		var p1 = "http://file.bmob.cn/";
+        var myChart = echarts.init(document.getElementById('main'));
+
+        // 指定图表的配置项和数据
+			    option = {
+			    title : {
+			        text: '图',
+			        subtext: '手机端的图',
+			        x:'center'
+			    },
+			    tooltip : {
+			        trigger: 'item',
+			        formatter: "{a} <br/>{b} : {c} ({d}%)"
+			    },
+			    legend: {
+			        orient: 'vertical',
+			        left: 'left',
+			        data: ['111','222','333','444','555']
+			    },
+			    series : [
+			        {
+			            name: '访问来源',
+			            type: 'pie',
+			            radius : '45%',
+			            center: ['30%', '40%'],
+			            data:[
+			                {value:335, name:'111'},
+			                {value:310, name:'222'},
+			                {value:234, name:'333'},
+			                {value:135, name:'444'},
+			                {value:1548, name:'555'}
+			            ],
+			            itemStyle: {
+			                emphasis: {
+			                    shadowBlur: 10,
+			                    shadowOffsetX: 0,
+			                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+			                }
+			            }
+			        }
+			    ]
+			};
+        var a = option.series[0].data;
+        console.log(a);
+        // 数据从后台读取
+        for(var i=0;i<a.length;i++){
+        	console.log(a[i].value);
+        }
+        // 数字截取
+        // if(words[i].match(/\d+/)!=""&&words[i].match(/\d+/)!=null){
+		 //  gets[j]=words[i].match(/\d+/)
+		 //  document.write(gets[j]+"<br>")
+		 //  j++
+		 // }
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+    </script>
+</body>
+</html>
